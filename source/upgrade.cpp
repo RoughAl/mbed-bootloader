@@ -100,6 +100,7 @@ bool checkStoredApplication(uint32_t source,
                             buffer.size_max : (details->size - offset);
 
             /* fill buffer using UCP */
+            printf("UCP read source=%lu offset=%lu\n", source, offset);
             arm_uc_error_t ucp_status = ARM_UCP_Read(source,
                                                      offset,
                                                      &buffer);
