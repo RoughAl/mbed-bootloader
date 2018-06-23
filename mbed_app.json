@@ -56,7 +56,6 @@
         "*": {
             "target.features_remove": ["LWIP"],
             "target.features_add"   : ["COMMON_PAL"],
-            "platform.stdio-baud-rate"    : 115200,
             "platform.stdio-flush-at-exit": false,
             "update-client.storage-address"  : "(1024*1024*64)",
             "update-client.storage-size"     : "(1024*1024*2)",
@@ -151,6 +150,21 @@
             "update-client.application-details": "(MBED_CONF_APP_FLASH_START_ADDRESS+64*1024)",
             "application-start-address"        : "(MBED_CONF_APP_FLASH_START_ADDRESS+65*1024)",
             "max-application-size"             : "DEFAULT_MAX_APPLICATION_SIZE"
+        },
+        "FF1705_L151CC": {
+            "flash-start-address"              : "0x08000000",
+            "flash-size"                       : "(256*1024)",
+            "sotp-section-1-address"           : "(MBED_CONF_APP_FLASH_START_ADDRESS+32*1024)",
+            "sotp-section-1-size"              : "(16*1024)",
+            "sotp-section-2-address"           : "(MBED_CONF_APP_FLASH_START_ADDRESS+48*1024)",
+            "sotp-section-2-size"              : "(16*1024)",
+            "update-client.application-details": "(MBED_CONF_APP_FLASH_START_ADDRESS+64*1024)",
+            "application-start-address"        : "(MBED_CONF_APP_FLASH_START_ADDRESS+65*1024)",
+            "max-application-size"             : "DEFAULT_MAX_APPLICATION_SIZE",
+            "update-client.storage-address"    : "0x0",
+            "update-client.storage-size"       : "1024*1024*4",
+            "update-client.storage-page"       : "528",
+            "target.macros_add"                : ["MBED_CLOUD_CLIENT_UPDATE_BUFFER=(528*2)"]
         }
     }
 }

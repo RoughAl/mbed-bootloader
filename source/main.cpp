@@ -56,19 +56,11 @@ extern ARM_UC_PAAL_UPDATE MBED_CLOUD_CLIENT_UPDATE_STORAGE;
 #endif
 
 #if MBED_CLOUD_CLIENT_UPDATE_STORAGE == ARM_UCP_FLASHIAP_BLOCKDEVICE
-#include "SDBlockDevice.h"
+#include "AT45BlockDevice.h"
 
-/* initialise sd card blockdevice */
-#if defined(MBED_CONF_APP_SPI_MOSI) && defined(MBED_CONF_APP_SPI_MISO) && \
-    defined(MBED_CONF_APP_SPI_CLK)  && defined(MBED_CONF_APP_SPI_CS)
-SDBlockDevice sd(MBED_CONF_APP_SPI_MOSI, MBED_CONF_APP_SPI_MISO,
-                 MBED_CONF_APP_SPI_CLK,  MBED_CONF_APP_SPI_CS);
-#else
-SDBlockDevice sd(MBED_CONF_SD_SPI_MOSI, MBED_CONF_SD_SPI_MISO,
-                 MBED_CONF_SD_SPI_CLK,  MBED_CONF_SD_SPI_CS);
-#endif
+AT45BlockDevice bd(SPI_MOSI, SPI_MISO, SPI_SCK, SPI_NSS);
 
-BlockDevice* arm_uc_blockdevice = &sd;
+BlockDevice* arm_uc_blockdevice = &bd;
 #endif
 
 int main(void)
@@ -155,6 +147,9 @@ int main(void)
             activeStorageDeinit();
         }
     }
+
+    // Deinit the block device to free the SPI interface
+    bd.deinit();
 
     /* forward control to ACTIVE application if it is deemed sane */
     if (canForward)
