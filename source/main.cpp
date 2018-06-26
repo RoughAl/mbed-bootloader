@@ -152,6 +152,9 @@ int main(void)
     /* forward control to ACTIVE application if it is deemed sane */
     if (canForward)
     {
+        /* copy the current firmware into external storage (if needed) */
+        copyActiveApplicationIntoFlash(&bd, MBED_CONF_APP_EXTERNAL_FLASH_APPLICATION_COPY_ADDRESS);
+
 #if defined(BOOTLOADER_POWER_CUT_TEST) && (BOOTLOADER_POWER_CUT_TEST == 1)
         power_cut_test_assert_state(POWER_CUT_TEST_STATE_END);
         wait(5);

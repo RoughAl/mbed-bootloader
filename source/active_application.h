@@ -17,6 +17,7 @@
 // ----------------------------------------------------------------------------
 
 #include "update-client-paal/arm_uc_paal_update_api.h"
+#include "BlockDevice.h"
 
 #include <stdint.h>
 
@@ -46,3 +47,5 @@ bool readActiveFirmwareHeader(arm_uc_firmware_details_t* details);
 int checkActiveApplication(arm_uc_firmware_details_t* details);
 
 bool copyStoredApplication(uint32_t index, arm_uc_firmware_details_t* details);
+
+int copyActiveApplicationIntoFlash(BlockDevice* bd, uint32_t bdOffset);

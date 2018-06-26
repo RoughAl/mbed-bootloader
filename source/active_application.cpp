@@ -22,6 +22,8 @@
 
 #include "active_application.h"
 #include "bootloader_common.h"
+#include "unaligned_blockdevice.h"
+#include "bd_sha256.h"
 
 #include "update-client-common/arm_uc_metadata_header_v2.h"
 #include "update-client-common/arm_uc_utilities.h"
@@ -239,6 +241,8 @@ bool eraseActiveFirmware(uint32_t firmwareSize)
 
 bool writeActiveFirmwareHeader(arm_uc_firmware_details_t* details)
 {
+    printf("writeActiveFirmwareHeader\n");
+
     tr_debug("writeActiveFirmwareHeader");
 
     bool result = false;
@@ -437,6 +441,131 @@ bool copyStoredApplication(uint32_t index,
         int recheck = checkActiveApplication(details);
 
         result = (recheck == RESULT_SUCCESS);
+    }
+
+    return result;
+}
+
+/**
+ * Copy the current firmware into external flash
+ * @param details Information about the active firmware
+ * @param bdOffset Offset in external flash,
+ *                 need to have enough space for the full application plus the size of the arm_uc_firmware_details_t struct.
+ *                 Does not need to be aligned.
+ *
+ *
+ * @return SUCCESS if the copy succeeds
+ *         EMPTY   if no active application is present
+ *         ERROR   if the copy fails
+ */
+int copyActiveApplicationIntoFlash(BlockDevice* bd, uint32_t bdOffset)
+{
+    printf("Copying active firmware into external flash...\n");
+
+    UnalignedBlockDevice ubd(bd);
+    int bd_status = ubd.init();
+    if (bd_status != BD_ERROR_OK) {
+        tr_warn("Could not initialize unaligned block device (%d)", bd_status);
+        return RESULT_ERROR;
+    }
+
+    int result = RESULT_ERROR;
+
+    /* read current active firmware details from flash */
+    arm_uc_firmware_details_t details;
+
+    /* Read header and verify that it is valid */
+    bool headerValid = readActiveFirmwareHeader(&details);
+
+    /* calculate hash if header is valid and slot is not empty */
+    if ((headerValid) && (details.size > 0))
+    {
+        /* Look at what's currently in flash, and if it's already correct */
+        arm_uc_firmware_details_t curr_details;
+        bd_status = ubd.read(&curr_details, bdOffset, sizeof(arm_uc_firmware_details_t));
+        if (bd_status != BD_ERROR_OK) {
+            /* This is a sign we cannot access the block device, so don't continue */
+            tr_warn("Could not read current details\n");
+            return RESULT_ERROR;
+        }
+
+        tr_debug("Details:\n");
+        tr_debug("New size=%llu version=%llu\n", details.size, details.version);
+        tr_debug("Old size=%llu version=%llu\n", curr_details.size, curr_details.version);
+
+        if (curr_details.version == details.version && curr_details.size == details.size) {
+            tr_info("Version and size match, right firmware already in place: abort copy\n");
+            return RESULT_SUCCESS;
+        }
+
+        tr_info("Version or size mismatch, copying firmware...\n");
+
+        /* Copy the details structure into flash */
+        size_t offset = bdOffset + sizeof(arm_uc_firmware_details_t);
+
+        uint32_t appStart = MBED_CONF_APP_APPLICATION_START_ADDRESS;
+
+        uint32_t remaining = details.size;
+        int32_t status = 0;
+
+        /* read full image */
+        while ((remaining > 0) && (status == 0))
+        {
+            /* read full buffer or what is remaining */
+            uint32_t readSize = (remaining > BUFFER_SIZE) ?
+                                BUFFER_SIZE : remaining;
+
+            /* read buffer using FlashIAP API for portability */
+            status = flash.read(buffer_array,
+                                appStart + (details.size - remaining),
+                                readSize);
+
+            /* and write it to external flash */
+            ubd.program(buffer_array, offset, readSize);
+
+            /* flash driver does not like writing quickly? */
+            wait_ms(100);
+
+            /* update remaining bytes */
+            remaining -= readSize;
+            offset += readSize;
+
+#if defined(SHOW_PROGRESS_BAR) && SHOW_PROGRESS_BAR == 1
+            printProgress(details.size - remaining,
+                            details.size);
+#endif
+        }
+
+        unsigned char shaInBd[SIZEOF_SHA256];
+
+        BdSha256 bdSha256(&ubd, buffer_array, BUFFER_SIZE);
+        bdSha256.calculate(bdOffset + sizeof(arm_uc_firmware_details_t), details.size, shaInBd);
+
+        /* compare calculated hash with hash from header */
+        int diff = memcmp(details.hash, shaInBd, SIZEOF_SHA256);
+
+        if (diff == 0)
+        {
+            printSHA256(details.hash);
+            result = RESULT_SUCCESS;
+        }
+        else
+        {
+            printSHA256(details.hash);
+            printSHA256(shaInBd);
+
+            return RESULT_ERROR;
+        }
+
+        /* copy the new details structure */
+        ubd.program(&details, bdOffset, sizeof(arm_uc_firmware_details_t));
+
+        return RESULT_SUCCESS;
+    }
+    else if ((headerValid) && (details.size == 0))
+    {
+        /* header is valid but application size is 0 */
+        result = RESULT_EMPTY;
     }
 
     return result;
