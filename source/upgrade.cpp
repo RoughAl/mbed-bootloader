@@ -412,6 +412,9 @@ bool upgradeApplicationFromStorage(void)
 #if defined(FIRMWARE_UPDATE_TEST) && (FIRMWARE_UPDATE_TEST == 1)
                 firmware_update_test_validate();
 #endif
+
+
+
                 break;
             }
             else

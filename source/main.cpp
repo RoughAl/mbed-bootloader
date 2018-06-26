@@ -149,9 +149,6 @@ int main(void)
         }
     }
 
-    // Deinit the block device to free the SPI interface
-    bd.deinit();
-
     /* forward control to ACTIVE application if it is deemed sane */
     if (canForward)
     {
