@@ -56,8 +56,9 @@ extern ARM_UC_PAAL_UPDATE MBED_CLOUD_CLIENT_UPDATE_STORAGE;
 #endif
 
 #if MBED_CLOUD_CLIENT_UPDATE_STORAGE == ARM_UCP_FLASHIAP_BLOCKDEVICE
-#include "AT45BlockDevice.h"
 
+// Flash interface on the L-TEK xDot shield
+#include "AT45BlockDevice.h"
 AT45BlockDevice bd(SPI_MOSI, SPI_MISO, SPI_SCK, SPI_NSS);
 
 BlockDevice* arm_uc_blockdevice = &bd;
@@ -97,7 +98,7 @@ int main(void)
     /* Print bootloader information                                          */
     /*************************************************************************/
 
-    tr_info("mbed Bootloader");
+    tr_info("Mbed Bootloader");
 
     /* although not referenced, arm_size is used indirectly in sizeof() below */
     /* coverity[set_but_not_used] */

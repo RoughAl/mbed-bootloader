@@ -69,7 +69,7 @@ void printProgress(uint32_t progress, uint32_t total);
 #ifdef tr_debug
 #undef tr_debug
 #endif
-#if 1
+#if 0
 #define tr_debug(fmt, ...)   printf("[DBG ] " fmt "\r\n", ##__VA_ARGS__)
 #else
 #define tr_debug(...)
